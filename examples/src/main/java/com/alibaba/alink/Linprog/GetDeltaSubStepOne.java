@@ -192,10 +192,10 @@ public class GetDeltaSubStepOne extends ComputeFunction {
         }
         //M_sub shape is (part_m, n)
         double[] M_sub = matrix_A.getSubMatrix(rangeM[0], rangeM[1],0,n)
-                .multiplies(A_T.getSubMatrix(0, n,rangeM[0], rangeM[1]))
+                //.multiplies(A_T.getSubMatrix(0, n,rangeM[0], rangeM[1]))
+                .multiplies(A_T)
                 .getArrayCopy1D(true);
         System.arraycopy(M_sub, 0, M, (int)M[0]+2, (int)(M[1]-M[0]));
-
         context.putObj(LPInnerPointBatchOp.LOCAL_M, M);
         context.putObj(LPInnerPointBatchOp.LOCAL_X_DIV_Z, x_div_z);
     }

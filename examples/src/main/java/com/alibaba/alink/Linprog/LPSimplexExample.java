@@ -48,7 +48,7 @@ public class LPSimplexExample {
         if(IPTest) {
 
             LPInnerPointBatchOp dOp = new LPInnerPointBatchOp();
-            BatchOperator.setParallelism(1);
+            BatchOperator.setParallelism(2);
             dOp.linkFrom(op1, op2, op3, op4, op5).print();
         }else{
             LPSimplexBatchOp dOp = new LPSimplexBatchOp();
