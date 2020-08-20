@@ -16,9 +16,6 @@ public class LPInnerPointBatchOp extends BatchOperator<LPInnerPointBatchOp> {
     public static final String UPPER_BOUNDS =   "upperBounds";
     public static final String LOWER_BOUNDS =   "lowerBounds";
     public static final String UN_BOUNDS    =   "unBounds";
-    public static final String PART_VECTOR  =   "partVector";
-    public static final String RANGE    =   "range";
-
     public static final String STATIC_A =   "staticA";// (m,n)
     public static final String STATIC_B =   "staticB";// (m,)
     public static final String STATIC_C =   "staticC";// (n,)
@@ -34,7 +31,7 @@ public class LPInnerPointBatchOp extends BatchOperator<LPInnerPointBatchOp> {
     public static final String LOCAL_M_INV  =   "localMInv";// DenseMatrix
     public static final String LOCAL_X_DIV_Z=   "localXDivZ";// (n,)
     public static final String LOCAL_R_HAT_XS =   "localRHatXs";
-    public static final String LOCAL_R_HAT_TK =   "localRHatTk";
+    public static final String LOCAL_X_HAT =   "localXHat";
     public static final String R_P  =   "r_P";// (m+2,)
     public static final String R_D  =   "r_D";// (n+2,)
     public static final String R_G  =   "r_G";// constant
@@ -43,7 +40,7 @@ public class LPInnerPointBatchOp extends BatchOperator<LPInnerPointBatchOp> {
     public static final String D_Z=   "d_z";
     public static final String D_TAU    =   "d_tau";
     public static final String D_KAPPA  =   "d_kappa";
-    public static final String ALPHA0=   "alpha0";
+    public static final String N=   "n";
     public static final String R_P0 =   "r_p0";
     public static final String R_D0 =   "r_d0";
     public static final String R_G0 =   "r_g0";
@@ -58,20 +55,19 @@ public class LPInnerPointBatchOp extends BatchOperator<LPInnerPointBatchOp> {
         return new IterativeComQueue()
                 .initWithBroadcastData(MATRIX,inputMatrix)
                 .initWithBroadcastData(VECTOR,inputVec)
-                //.initWithBroadcastData(UPPER_BOUNDS, UpperBounds)
+                .initWithBroadcastData(UPPER_BOUNDS, UpperBounds)
                 .initWithBroadcastData(LOWER_BOUNDS, LowerBounds)
                 .initWithBroadcastData(UN_BOUNDS, UnBounds)
                 .add(new GetDeltaSubStepOne())
                 .add(new AllReduce(R_D, null, new mergeVectorReduceFunc()))
                 .add(new AllReduce(R_P, null, new mergeVectorReduceFunc()))
                 .add(new AllReduce(LOCAL_M, null, new mergeVectorReduceFunc()))
-                //.add(new GetDeltaSubStepOne())
                 .add(new GetDeltaSolveStep(0))
                 .add(new GetDeltaSolveStep(1))
                 .add(new LPInnerPointDoStep())
                 .setCompareCriterionOfNode0(new LPInnerPointIterTermination())
                 .closeWith(new MatMulVecComplete())
-                .setMaxIter(3)
+                .setMaxIter(10)
                 .exec();
     }
 
@@ -91,8 +87,8 @@ public class LPInnerPointBatchOp extends BatchOperator<LPInnerPointBatchOp> {
                 .map((MapFunction<Row, Row>)row->{
                     return row;
                 })
-                .returns(new RowTypeInfo(Types.INT));
-        this.setOutput(Input, new String[]{"taskId"});
+                .returns(new RowTypeInfo(Types.DOUBLE));
+        this.setOutput(Input, new String[]{"result"});
 
         return this;
     }

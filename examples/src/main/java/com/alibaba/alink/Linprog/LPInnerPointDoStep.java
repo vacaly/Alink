@@ -9,6 +9,7 @@ import com.alibaba.alink.devp.linprogUtil;
 import org.apache.flink.api.java.tuple.Tuple5;
 
 import static com.alibaba.alink.Linprog.util.LinProUtils.Obj2DenseVector;
+import static com.alibaba.alink.Linprog.util.LinProUtils.VectorDivs;
 
 public class LPInnerPointDoStep extends ComputeFunction {
     @Override
@@ -33,8 +34,7 @@ public class LPInnerPointDoStep extends ComputeFunction {
         context.putObj(LPInnerPointBatchOp.LOCAL_TAU, data.f3);
         context.putObj(LPInnerPointBatchOp.LOCAL_KAPPA, data.f4);
         context.putObj(LPInnerPointBatchOp.CONDITION_GO, indicators(data.f0,data.f1,data.f2,data.f3, data.f4,context));
-        System.out.println("x is updated:");
-        linprogUtil.LPPrintVector(data.f0);
+        //linprogUtil.LPPrintVector(data.f0.scale(1/data.f3));
     }
 
     static public boolean indicators(DenseVector x, DenseVector y, DenseVector z,
@@ -60,8 +60,14 @@ public class LPInnerPointDoStep extends ComputeFunction {
         //double rho_mu= (x.dot(z) + tau * kappa) / ((x.size()+1)*mu_0);
         //double obj   = x.scale(1/tau).dot(c) + c0;
         double tol   = 1e-8;
-        if(rho_p>tol || rho_d>tol || rho_A>tol)
+        if(rho_p>tol || rho_d>tol || rho_A>tol) {
+            context.putObj(LPInnerPointBatchOp.LOCAL_X_HAT, x.scale(1 / tau));
+            if(context.getTaskId()==0) {
+                System.out.println("x array:");
+                linprogUtil.LPPrintVector(x.scale(1 / tau));
+            }
             return false;
+        }
         return true;
     }
 }

@@ -48,6 +48,9 @@ public class GetDeltaSubStepOne extends ComputeFunction {
             List<Row> lowerBoundsListRow    = context.getObj(LPInnerPointBatchOp.LOWER_BOUNDS);
             List<Row> unBoundsListRow       = context.getObj(LPInnerPointBatchOp.UN_BOUNDS);
 
+            //need varNum when completed
+            int varNum = fullMatrixListRow.get(0).getArity()-2;
+            context.putObj(LPInnerPointBatchOp.N, varNum);
             //process original input to standard form
             List<Tuple2<Integer, DenseVector>> fullMatrixTupleIntVec = null;
             DenseVector objectiveRow = null;

@@ -12,6 +12,7 @@ public class LPSimplexComplete extends CompleteResultFunction {
     @Override
     public List<Row> calc(ComContext context) {
         DenseVector object = context.getObj(LPSimplexBatchOp.OBJECTIVE);
+        linprogUtil.LPPrintVector(object);
         Row row = new Row(1);
         row.setField(0, -1*object.get(0));
         RowCollector collector = new RowCollector();

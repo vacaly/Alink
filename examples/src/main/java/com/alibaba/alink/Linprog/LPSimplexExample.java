@@ -44,7 +44,7 @@ public class LPSimplexExample {
         BatchOperator op5 = BatchOperator.fromTable(MLEnvironmentFactory.getDefault()
                 .createBatchTable(r5, new String[]{"x",}));
 
-        boolean IPTest = false;
+        boolean IPTest = true;
         if(IPTest) {
 
             LPInnerPointBatchOp dOp = new LPInnerPointBatchOp();
