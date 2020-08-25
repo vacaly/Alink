@@ -1,15 +1,17 @@
-package com.alibaba.alink.Linprog;
+package com.alibaba.alink;
 
 import com.alibaba.alink.common.MLEnvironmentFactory;
 import com.alibaba.alink.operator.batch.BatchOperator;
+import com.alibaba.alink.operator.batch.linearprogramming.InteriorPointBatchOp;
+import com.alibaba.alink.operator.batch.linearprogramming.SimpleXBatchOp;
 import org.apache.flink.types.Row;
 
 
 public class LPSimplexExample {
     public void test1() throws Exception {
         Row[] r1 = new Row[]{
-                Row.of(-3.0,   1.0,   "le",   6.0),
-                Row.of(1.0,    2.0,   "le",   4.0)
+                Row.of(-3.0, 1.0, "le", 6.0),
+                Row.of(1.0, 2.0, "le", 4.0)
         };
 
         Row[] r2 = new Row[]{
@@ -18,11 +20,11 @@ public class LPSimplexExample {
         };
 
         Row[] r3 = new Row[]{
-                Row.of(1,300.0)
+                Row.of(1, 300.0)
         };
 
         Row[] r4 = new Row[]{
-                Row.of(1,-3.0)
+                Row.of(1, -3.0)
         };
 
         Row[] r5 = new Row[]{
@@ -30,7 +32,7 @@ public class LPSimplexExample {
         };
 
         BatchOperator op1 = BatchOperator.fromTable(MLEnvironmentFactory.getDefault()
-                        .createBatchTable(r1, new String[]{"x0", "x1", "relation", "b"}));
+                .createBatchTable(r1, new String[]{"x0", "x1", "relation", "b"}));
 
         BatchOperator op2 = BatchOperator.fromTable(MLEnvironmentFactory.getDefault()
                 .createBatchTable(r2, new String[]{"x", "c"}));
@@ -45,13 +47,12 @@ public class LPSimplexExample {
                 .createBatchTable(r5, new String[]{"x",}));
 
         boolean IPTest = true;
-        if(IPTest) {
-
-            LPInnerPointBatchOp dOp = new LPInnerPointBatchOp();
+        if (IPTest) {
+            InteriorPointBatchOp dOp = new InteriorPointBatchOp();
             BatchOperator.setParallelism(2);
             dOp.linkFrom(op1, op2, op3, op4, op5).print();
-        }else{
-            LPSimplexBatchOp dOp = new LPSimplexBatchOp();
+        } else {
+            SimpleXBatchOp dOp = new SimpleXBatchOp();
             dOp.setMaxIter(8);
             BatchOperator.setParallelism(2);
             dOp.linkFrom(op1, op2, op3, op4, op5).print();

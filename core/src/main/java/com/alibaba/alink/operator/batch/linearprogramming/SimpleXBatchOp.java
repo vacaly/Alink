@@ -1,10 +1,11 @@
-package com.alibaba.alink.Linprog;
+package com.alibaba.alink.operator.batch.linearprogramming;
 
 import com.alibaba.alink.common.comqueue.IterativeComQueue;
 import com.alibaba.alink.common.comqueue.communication.AllReduce;
-import com.alibaba.alink.devp.LPParams;
-import com.alibaba.alink.devp.LPSimplexComplete;
-import com.alibaba.alink.devp.LPSimplexIterTermination;
+import com.alibaba.alink.params.linearprogramming.LPParams;
+import com.alibaba.alink.operator.common.linearprogramming.SimpleX.SimpleXCom;
+import com.alibaba.alink.operator.common.linearprogramming.SimpleX.SimpleXComplete;
+import com.alibaba.alink.operator.common.linearprogramming.SimpleX.SimpleXIterTermination;
 import com.alibaba.alink.operator.batch.BatchOperator;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.Types;
@@ -12,7 +13,16 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.types.Row;
 
-public class LPSimplexBatchOp extends BatchOperator<LPSimplexBatchOp> implements LPParams<LPSimplexBatchOp> {
+/**
+ * SimpleX method uses a full-tableau implementation of Dantzig's simplex algorithm [1]_
+ *
+ * References
+ * ----------
+ * .. [1] Dantzig, George B., Linear programming and extensions. Rand
+ *        Corporation Research Study Princeton Univ. Press, Princeton, NJ,
+ *        1963
+ */
+public class SimpleXBatchOp extends BatchOperator<SimpleXBatchOp> implements LPParams<SimpleXBatchOp> {
     public static final String TABLEAU = "tableau";
     public static final String UNBOUNDED = "unbounded";
     public static final String COMPLETED = "completed";
@@ -26,48 +36,47 @@ public class LPSimplexBatchOp extends BatchOperator<LPSimplexBatchOp> implements
     public static final String LOWER_BOUNDS = "lowerBounds";
     public static final String UN_BOUNDS = "unBounds";
 
-    static DataSet<Row> iterateICQ(DataSet <Row> Tableau,
+    static DataSet<Row> iterateICQ(DataSet<Row> Tableau,
                                    final int maxIter,
                                    DataSet<Row> Objective,
                                    DataSet<Row> UpperBounds,
                                    DataSet<Row> LowerBounds,
-                                   DataSet<Row> UnBounds){
+                                   DataSet<Row> UnBounds) {
         return new IterativeComQueue()
                 .initWithBroadcastData(TABLEAU, Tableau)
                 .initWithBroadcastData(OBJECTIVE, Objective)
                 .initWithBroadcastData(UPPER_BOUNDS, UpperBounds)
                 .initWithBroadcastData(LOWER_BOUNDS, LowerBounds)
                 .initWithBroadcastData(UN_BOUNDS, UnBounds)
-                .add(new LPSimplexCom())
+                .add(new SimpleXCom())
                 .add(new AllReduce(PIVOT_ROW_VALUE, null,
                         new AllReduce.SerializableBiConsumer<double[], double[]>() {
                             @Override
                             public void accept(double[] a, double[] b) {
-                                if(a[0]==-1.0 ||
-                                        (b[0]>-1.0 && b[1]<a[1]) ||
-                                        (b[1]==a[1] && b[0]<a[0]))
-                                {
+                                if (a[0] == -1.0 ||
+                                        (b[0] > -1.0 && b[1] < a[1]) ||
+                                        (b[1] == a[1] && b[0] < a[0])) {
                                     for (int i = 0; i < a.length; ++i)
                                         a[i] = b[i];
                                 }
                             }
                         }))
-                .setCompareCriterionOfNode0(new LPSimplexIterTermination())
-                .closeWith(new LPSimplexComplete())
+                .setCompareCriterionOfNode0(new SimpleXIterTermination())
+                .closeWith(new SimpleXComplete())
                 .setMaxIter(maxIter)
                 .exec();
     }
 
     @Override
-    public LPSimplexBatchOp linkFrom(BatchOperator<?>... inputs) {
-        int inputLength                     = inputs.length;
-        int maxIter                         = this.getMaxIter();
+    public SimpleXBatchOp linkFrom(BatchOperator<?>... inputs) {
+        int inputLength = inputs.length;
+        int maxIter = this.getMaxIter();
         if (inputLength <= 1) throw new AssertionError();
-        DataSet<Row> TableauDataSet         = inputs[0].getDataSet();
-        DataSet<Row> CoefficientsDataSet    = inputs[1].getDataSet();
-        DataSet<Row> UpperBoundsDataSet     = inputLength>2 ? inputs[2].getDataSet() : null;
-        DataSet<Row> LowerBoundsDataSet     = inputLength>3 ? inputs[3].getDataSet() : null;
-        DataSet<Row> UnBoundsDataSet        = inputLength>4 ? inputs[4].getDataSet() : null;
+        DataSet<Row> TableauDataSet = inputs[0].getDataSet();
+        DataSet<Row> CoefficientsDataSet = inputs[1].getDataSet();
+        DataSet<Row> UpperBoundsDataSet = inputs[2].getDataSet();
+        DataSet<Row> LowerBoundsDataSet = inputs[3].getDataSet();
+        DataSet<Row> UnBoundsDataSet = inputs[4].getDataSet();
 
         DataSet<Row> Input = iterateICQ(
                 TableauDataSet,
@@ -76,9 +85,7 @@ public class LPSimplexBatchOp extends BatchOperator<LPSimplexBatchOp> implements
                 UpperBoundsDataSet,
                 LowerBoundsDataSet,
                 UnBoundsDataSet)
-                .map((MapFunction<Row, Row>) row -> {
-                    return row;
-                })
+                .map((MapFunction<Row, Row>) row -> row)
                 .returns(new RowTypeInfo(Types.DOUBLE));
         this.setOutput(Input, new String[]{"MinObject"});
 
