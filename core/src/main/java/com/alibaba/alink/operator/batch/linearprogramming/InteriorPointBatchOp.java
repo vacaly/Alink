@@ -84,7 +84,8 @@ public class InteriorPointBatchOp extends BatchOperator<InteriorPointBatchOp> im
                                    DataSet<Row> inputVec,
                                    DataSet<Row> upperBounds,
                                    DataSet<Row> lowerBounds,
-                                   DataSet<Row> unBounds) {
+                                   DataSet<Row> unBounds,
+                                   int iter) {
         return new IterativeComQueue()
                 .initWithBroadcastData(MATRIX, inputMatrix)
                 .initWithBroadcastData(VECTOR, inputVec)
@@ -100,7 +101,7 @@ public class InteriorPointBatchOp extends BatchOperator<InteriorPointBatchOp> im
                 .add(new UpdateData())
                 .setCompareCriterionOfNode0(new InteriorPointIterTermination())
                 .closeWith(new InteriorPointComplete())
-                .setMaxIter(10)
+                .setMaxIter(iter)
                 .exec();
     }
 
@@ -111,10 +112,12 @@ public class InteriorPointBatchOp extends BatchOperator<InteriorPointBatchOp> im
         DataSet<Row> UpperBoundsDataSet = inputs[2].getDataSet();
         DataSet<Row> LowerBoundsDataSet = inputs[3].getDataSet();
         DataSet<Row> UnBoundsDataSet = inputs[4].getDataSet();
+        int iter = getMaxIter();
         DataSet<Row> Input = iterateICQ(inputM, inputV,
                 UpperBoundsDataSet,
                 LowerBoundsDataSet,
-                UnBoundsDataSet)
+                UnBoundsDataSet,
+                iter)
                 .map((MapFunction<Row, Row>) row -> {
                     return row;
                 })

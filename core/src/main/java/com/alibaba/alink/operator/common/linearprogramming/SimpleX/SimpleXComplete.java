@@ -17,7 +17,7 @@ public class SimpleXComplete extends CompleteResultFunction {
     @Override
     public List<Row> calc(ComContext context) {
         DenseVector object = context.getObj(SimpleXBatchOp.OBJECTIVE);
-        LinearProgrammingUtil.LPPrintVector(object);
+        //LinearProgrammingUtil.LPPrintVector(object);
         Row row = new Row(1);
         row.setField(0, -1 * object.get(0));
         RowCollector collector = new RowCollector();

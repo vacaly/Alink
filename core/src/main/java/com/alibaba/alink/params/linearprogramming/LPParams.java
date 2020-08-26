@@ -10,7 +10,7 @@ public interface LPParams<T> extends WithParams<T>{
     ParamInfo <Integer> MAX_ITER = ParamInfoFactory
             .createParamInfo("maxIter", Integer.class)
             .setDescription("Maximum iterations, the default value is 50")
-            .setHasDefaultValue(4)
+            .setHasDefaultValue(100)
             .setAlias(new String[] {"numIter"})
             .build();
 
